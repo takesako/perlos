@@ -1,0 +1,1 @@
+package Carp;use Carp;our$VERSION=$Carp::VERSION;1;
