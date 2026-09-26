@@ -2,7 +2,10 @@
 /perl-5.*.*/
 
 # ROM FS image
-/os/romfs_image.c
+/os/romfs_image.*
+
+# uf2
+*.uf2
 
 # Prerequisites
 *.d
