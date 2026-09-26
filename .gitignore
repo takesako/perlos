@@ -1,3 +1,9 @@
+# Perl sources
+/perl-5.*.*/
+
+# ROM FS image
+/os/romfs_image.c
+
 # Prerequisites
 *.d
 

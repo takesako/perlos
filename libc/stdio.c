@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
 
 #ifdef ROMFS
 #define _NFILE 8
@@ -205,7 +206,7 @@ static int vfmt(OUT *o,const char *f,__builtin_va_list a){
  while(*f){
   if(*f!='%'){P(*f++);continue;}
   if(!*++f){P('%');break;}
-  char pad=*f=='0'?*f++:' ';int w=0,p=-1,l=0;
+  char pad=*f=='0'?*f++:' ';int w=0,p=-1,l=0,z=0;
   if(*f=='*')w=__builtin_va_arg(a,int),f++;
   else while(*f>='0'&&*f<='9')w=w*10+*f++-'0';
   if(*f=='.'){
@@ -214,6 +215,7 @@ static int vfmt(OUT *o,const char *f,__builtin_va_list a){
    else while(*f>='0'&&*f<='9')p=p*10+*f++-'0';
   }
   if(*f=='l')l=1,f++;
+  else if(*f=='z')z=1,f++;
   if(*f=='s'){
    char *s=__builtin_va_arg(a,char *);int n=0;if(!s)s="(null)";
    while(s[n])n++;while(n++<w)P(pad);while(*s)P(*s++);
@@ -222,9 +224,14 @@ static int vfmt(OUT *o,const char *f,__builtin_va_list a){
    unsigned long x;char b[24];int i=0,m=0,base=(*f=='x'||*f=='X')?16:10;
    const char *d=*f=='X'?"0123456789ABCDEF":"0123456789abcdef";
    if(*f=='d'){
-    long v=l?__builtin_va_arg(a,long):__builtin_va_arg(a,int);
+    long v;
+    if(z)v=(long)__builtin_va_arg(a,ssize_t);
+    else v=l?__builtin_va_arg(a,long):__builtin_va_arg(a,int);
     m=v<0;x=m?0ul-(unsigned long)v:(unsigned long)v;
-   }else x=l?__builtin_va_arg(a,unsigned long):__builtin_va_arg(a,unsigned);
+   }else{
+    if(z)x=(unsigned long)__builtin_va_arg(a,size_t);
+    else x=l?__builtin_va_arg(a,unsigned long):__builtin_va_arg(a,unsigned);
+   }
    do b[i++]=d[x%base],x/=base;while(x);
    int n=i+m;if(m&&pad=='0')P('-'),m=0;while(n++<w)P(pad);
    if(m)P('-');while(i)P(b[--i]);
@@ -235,7 +242,7 @@ static int vfmt(OUT *o,const char *f,__builtin_va_list a){
   }else{P('%');if(*f!='%')P(*f);}
   if(*f)f++;
  }
- if(!o->f&&o->z)o->s[o->n<o->z?o->n:o->z-1]=0;
+ if(!o->f&&o->z)o->s[(o->n<o->z)?(o->n):(o->z-1)]=0;
 #undef P
  return o->e?EOF:(int)o->n;
 }

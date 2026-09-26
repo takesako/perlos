@@ -46,7 +46,7 @@ libc/%.o: libc/%.c
 # microperl
 
 $(PERL_SRCS): | $(PERL_READY)
-$(PERL_READY):
+$(PERL_READY): script/perl-patch.pl script/perl-uconfig.pl
 	@test -d "$(PERL_DIR)" || sh script/perl-get.sh
 	chmod 644 $(PERL_DIR)/*
 	cd $(PERL_DIR) && \
@@ -55,7 +55,7 @@ $(PERL_READY):
 		perl ../script/perl-uudmap.pl
 	@touch $@
 
-$(PERL_DIR)/%.o: $(PERL_DIR)/%.c
+$(PERL_DIR)/%.o: $(PERL_DIR)/%.c $(PERL_READY)
 	$(CC) $(CFLAGS) $(PERL_DEFS) $(PERL_OPTS) -c $< -o $@
 
 # PerlOS

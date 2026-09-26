@@ -8,6 +8,11 @@
 #include <dirent.h>
 #include <romfs.h>
 #include <io.h>
+#include <heap.h>
+#include <timer.h>
+
+_Static_assert(sizeof(NV)==4, "PerlOS requires binary32 NV");
+_Static_assert(sizeof(IV)==4 && sizeof(void *)==4, "PerlOS requires ILP32");
 
 #define PTR(t,n) ((volatile t *)(uintptr_t)SvUV(ST(n)))
 
@@ -101,6 +106,40 @@ XS(XS_getchar_timeout)
     XSRETURN(1);
 }
 
+XS(XS_gettick)
+{
+    dXSARGS;
+    if (items) croak("Usage: gettick()");
+    ST(0)=sv_2mortal(newSVuv((UV)gettick()));
+    XSRETURN(1);
+}
+
+XS(XS_gettick_diff)
+{
+    dXSARGS;
+    if (items != 1) croak("Usage: gettick_diff(start)");
+    unsigned start=(unsigned)SvUV(ST(0));
+    ST(0)=sv_2mortal(newSVuv((UV)(unsigned)(gettick()-start)));
+    XSRETURN(1);
+}
+
+XS(XS_meminfo)
+{
+    dXSARGS;
+    struct heap_stats s;
+    if (items) croak("Usage: meminfo()");
+    if (heap_get_stats(&s)) croak("heap metadata corrupt");
+    HV *h=newHV();
+#define FIELD(n) hv_store(h,#n,sizeof(#n)-1,newSVuv((UV)s.n),0)
+    FIELD(total); FIELD(used); FIELD(free); FIELD(largest); FIELD(overhead);
+    FIELD(peak_used); FIELD(peak_occupied); FIELD(used_blocks); FIELD(free_blocks);
+    FIELD(malloc_calls); FIELD(calloc_calls); FIELD(realloc_calls); FIELD(free_calls);
+    FIELD(realloc_inplace); FIELD(realloc_moved); FIELD(failures);
+#undef FIELD
+    ST(0)=sv_2mortal(newRV_noinc((SV *)h));
+    XSRETURN(1);
+}
+
 void perlos_init(pTHX)
 {
     newXSproto("main::pwd",    XS_pwd,    __FILE__,"");
@@ -114,6 +153,9 @@ void perlos_init(pTHX)
     newXSproto("main::bits32", XS_bits32, __FILE__,"$$;$");
     newXSproto("main::flip32", XS_flip32, __FILE__,"$$");
     newXSproto("main::getchar_timeout",XS_getchar_timeout,__FILE__,"$");
+    newXSproto("main::gettick",        XS_gettick,        __FILE__, "");
+    newXSproto("main::gettick_diff",   XS_gettick_diff,   __FILE__, "$");
+    newXSproto("main::meminfo",        XS_meminfo,        __FILE__, "");
 }
 
 static void dump_str(SV *v)
@@ -200,6 +242,7 @@ int perlos_readline(char *s, size_t cap)
 
 static PerlInterpreter *my_perl;
 static char line[4096];
+static int monitor_heap;
 
 static void evaluate(const char *text, size_t len)
 {
@@ -224,6 +267,7 @@ static void evaluate(const char *text, size_t len)
     SP-=n;
     PUTBACK;
     FREETMPS; LEAVE;
+    if (monitor_heap) heap_dump("after eval");
 }
 
 int perlos_repl(void)
@@ -252,8 +296,21 @@ int perlos_repl(void)
             free(block); block=0; used=0; multiline=0; continue;
         }
         if(!strcmp(line,":quit"))break;
+        if(!multiline && !strncmp(line,":mem",4) && (!line[4] || line[4]==' ')) {
+            if(!strcmp(line,":mem on")) monitor_heap=1;
+            else if(!strcmp(line,":mem off")) monitor_heap=0;
+            else if(!strcmp(line,":mem reset")) heap_reset_peak();
+            else if(!strcmp(line,":mem check")) {
+                puts(heap_check()?"heap check: CORRUPT":"heap check: OK"); continue;
+            } else if(strcmp(line,":mem")) {
+                puts("Usage: :mem [on|off|reset|check]"); continue;
+            }
+            heap_dump("repl"); continue;
+        }
         if(!strcmp(line,":cancel")) { free(block); block=0; used=0; multiline=0; continue; }
         if(!multiline && !strcmp(line,":help")) {
+            puts(":mem [on|off|reset|check] monitors the C heap without allocating.");
+            puts("ticks(), elapsed_ms(start), meminfo() are available from Perl.");
             puts("Evaluate one line in list context. Results are printed automatically.");
             puts("Globals persist; lexical my variables do not persist between evaluations.");
             puts("Use :{ and :} for multiline input. Type :quit or Ctrl-D to exit.");
@@ -271,6 +328,7 @@ int perlos_repl(void)
             }
             char *p=realloc(block,used+(size_t)n+2);
             if(!p) {
+                heap_dump_failure("REPL multiline input",0);
                 puts("out of memory; input discarded");
                 free(block); block=0; used=0; multiline=0; continue;
             }

@@ -26,7 +26,7 @@ sub runloop{my($n,$c)=@_;$n+=0;croak"negative loopcount $n"if$n<0;confess usage 
 usage: $result = timeit($count, 'code' );        or
        $result = timeit($count, sub { code } );
 USAGE
-sub timeit{my($n,$code)=@_;my($wn,$wc,$wd);die usage unless defined$code and(!ref$code or ref$code eq'CODE');printf STDERR"timeit $n $code\n"if$Debug;my$cache_key=$n.(ref($code)?'c':'s');if($Do_Cache&&exists$Cache{$cache_key}){$wn=$Cache{$cache_key}}else{$wn=&runloop($n,ref($code)?sub {}:'');$wn->[5]=0;$Cache{$cache_key}=$wn}$wc=&runloop($n,$code);$wd=timediff($wc,$wn);timedebug("timeit: ",$wc);timedebug("      - ",$wn);timedebug("      = ",$wd);$wd}my$default_for=3;my$min_for=0.1;$_Usage{countit}=<<'USAGE';
+sub timeit{my($n,$code)=@_;my($wn,$wc,$wd);die usage unless defined$code and(!ref$code or ref$code eq'CODE');printf STDERR"timeit $n $code\n"if$Debug;my$cache_key=$n.(ref($code)?'c':'s');if($Do_Cache&&exists$Cache{$cache_key}){$wn=$Cache{$cache_key}}else{$wn=&runloop($n,ref($code)?sub {}:'');$wn->[5]=0;$Cache{$cache_key}=$wn if$Do_Cache}$wc=&runloop($n,$code);$wd=timediff($wc,$wn);timedebug("timeit: ",$wc);timedebug("      - ",$wn);timedebug("      = ",$wd);$wd}my$default_for=3;my$min_for=0.1;$_Usage{countit}=<<'USAGE';
 usage: $result = countit($time, 'code' );        or
        $result = countit($time, sub { code } );
 USAGE
