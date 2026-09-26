@@ -30,7 +30,7 @@ PERL_SRCS := $(PERL_OBJS:.o=.c)
 OS_OBJS   := os/romfs.o os/perlos.o
 ROMFS_IMG := os/romfs_image.o
 ROM_FILES := $(shell find root -type f)
-KERNEL    := boot.S kernel.c os/timer.c main.c
+KERNEL    := boot.S kernel.c os/timer.c
 QEMU_SYS  := $(KERNEL) os/io_an505.c
 PICO_SYS  := $(KERNEL) os/io_pico2.c pico2.S
 TESTS     := $(wildcard t/*.t)
@@ -79,8 +79,8 @@ os/romfs_image.o: os/romfs_image.c
 
 # QEMU / Arm MPS2+ AN505
 
-qemu.elf: qemu.ld $(QEMU_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG)
-	$(CC) $(CFLAGS) -DQEMU -T qemu.ld $(QEMU_SYS) \
+qemu.elf: qemu.ld main.c $(QEMU_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG)
+	$(CC) $(CFLAGS) -DQEMU -T qemu.ld $(QEMU_SYS) main.c \
 		$(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG) \
 		$(LDFLAGS) -o $@
 
@@ -90,8 +90,8 @@ run: qemu.elf
 
 # Raspberry Pi Pico 2
 
-pico2.elf: pico2.ld $(PICO_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG)
-	$(CC) $(CFLAGS) -DPICO2 -T pico2.ld $(PICO_SYS) \
+pico2.elf: pico2.ld main.c $(PICO_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG)
+	$(CC) $(CFLAGS) -DPICO2 -T pico2.ld $(PICO_SYS) main.c \
 		$(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG) \
 		$(LDFLAGS) $(LDLIBS) -o $@
 
