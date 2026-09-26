@@ -1,16 +1,32 @@
 #include <time.h>
+#include <sys/times.h>
 #include <limits.h>
 #include <errno.h>
 #include "timer.h"
 
-time_t time(time_t *p) // No RTC: epoch 0 is boot
+clock_t clock(void)
 {
-    static unsigned last; static unsigned long long ticks;
-    unsigned now = gettick(); ticks += (unsigned)(now-last); last = now;
-    time_t t = (time_t)(ticks/1000); if (p) *p = t; return t;
+    static unsigned last;
+    static unsigned long long ticks;
+    unsigned now = gettick();
+    ticks += (unsigned)(now - last); last = now;
+    return (clock_t)ticks;
 }
 
-clock_t clock(void) { return (clock_t)gettick(); }
+time_t time(time_t *p) // No RTC: epoch 0 is boot.
+{
+    time_t t = (time_t)(clock() / CLOCKS_PER_SEC);
+    if (p) *p = t;
+    return t;
+}
+
+clock_t times(struct tms *t)
+{
+    clock_t n = clock();
+    if (!t) { errno = EINVAL; return (clock_t)-1; }
+    *t = (struct tms){n, 0, 0, 0};
+    return n;
+}
 
 static long long days(long long y, int m, int d)
 {

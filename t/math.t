@@ -39,6 +39,6 @@ int main(void)
     ok(near(logf(expf(1)),1,0.01f),"log exp");
     ok(near(powf(2,3),8,0.01f),"pow integer");
     ok(isnan(powf(-2,.5f)) && near(powf(-2,3),-8,0.02f),"pow negative");
-printf("# cos(pi)=%f\n",cosf(M_PI_F));
+
     return fail!=0;
 }
