@@ -23,7 +23,7 @@ PERL_CORE := av deb doio doop dump globals gv hv locale mg mro numeric \
              op pad perl perlapi perlio perly pp pp_ctl pp_hot pp_pack \
              pp_sort pp_sys reentr regcomp regexec run scope sv taint \
              toke universal utf8 util
-LIBC_CORE := aeabi errno math setjmp stdio stdlib string time
+LIBC_CORE := aeabi errno math setjmp stdio stdlib string time heap
 LIBC_OBJS := $(addprefix libc/,$(addsuffix .o,$(LIBC_CORE)))
 PERL_OBJS := $(addprefix $(PERL_DIR)/,$(addsuffix .o,$(PERL_CORE)))
 PERL_SRCS := $(PERL_OBJS:.o=.c)
