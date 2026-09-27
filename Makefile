@@ -15,7 +15,8 @@ PERL_DIR  := perl-5.12.5
 PERL_READY:= $(PERL_DIR)/uudmap.h
 PERL_DEFS := -DPERL_CORE -DPERL_MICRO -DSTANDARD_C -DNO_MATHOMS \
              -DPICOPERL_NV_FLOAT -DPERL_USE_SAFE_PUTENV \
-             -DPERL_EXTERNAL_GLOB -DPERL_ARENA_SIZE=1024
+             -DPERL_EXTERNAL_GLOB -DPERL_ARENA_SIZE=1024 \
+             -DPERLOS_HEAP_DIAGNOSTICS
 PERL_OPTS := -fsingle-precision-constant -Wno-unused-variable \
              -Wno-unused-but-set-variable -Wno-implicit-fallthrough \
              -Wno-maybe-uninitialized -Wno-address
@@ -46,7 +47,7 @@ libc/%.o: libc/%.c
 # microperl
 
 $(PERL_SRCS): | $(PERL_READY)
-$(PERL_READY): script/perl-patch.pl script/perl-uconfig.pl
+$(PERL_READY): script/perl-patch.pl script/perl-uconfig.pl script/perl-uudmap.pl
 	@test -d "$(PERL_DIR)" || sh script/perl-get.sh
 	chmod 644 $(PERL_DIR)/*
 	cd $(PERL_DIR) && \

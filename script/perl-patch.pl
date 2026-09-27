@@ -155,3 +155,41 @@ END
 
 patch_time64();
 patch_pp_sys();
+
+append_once('perl.h','/* PERLOS_HEAP_SAFE */',<<'END');
+#ifdef PERLOS_HEAP_DIAGNOSTICS
+#include <heap.h>
+#if defined(USE_ITHREADS) || defined(PERL_IMPLICIT_SYS)
+#error PERLOS_HEAP_DIAGNOSTICS requires singleton libc allocator
+#endif
+#undef PerlMemShared_malloc
+#undef PerlMemShared_realloc
+#undef PerlMemShared_calloc
+#define PerlMemShared_malloc(n) Perl_safesysmalloc(n)
+#define PerlMemShared_realloc(p,n) Perl_safesysrealloc((p),(n))
+#define PerlMemShared_calloc(n,s) Perl_safesyscalloc((n),(s))
+#endif
+END
+
+sub patch_memory {
+    my $file='util.c';
+    open my $f,'<',$file or die "$file: $!\n";
+    local $/; my $s=<$f>; close $f;
+    unless(index($s,'/* PERLOS_HEAP_DIAGNOSTICS */')>=0) {
+        my $old='    /* Can\'t use PerlIO to write as it allocates memory */';
+        my $new=<<'END';
+    /* PERLOS_HEAP_DIAGNOSTICS */
+#ifdef PERLOS_HEAP_DIAGNOSTICS
+    console_write("Out of memory!\n", 15);
+    heap_dump_failure(PL_curcop ? CopFILE(PL_curcop) : NULL,
+                      PL_curcop ? (unsigned)CopLINE(PL_curcop) : 0);
+    exit(1);
+#endif
+END
+        $s=~s/\Q$old\E/$new$old/ or die "$file: OOM hook not found\n";
+        # The allocator's caller is the safe wrapper; record its caller instead.
+        $s=~s/(^[ \t]*)return write_no_mem\(\);/$1#ifdef PERLOS_HEAP_DIAGNOSTICS\n$1heap_failure_site(__builtin_return_address(0));\n$1#endif\n$1return write_no_mem();/mg;
+        open $f,'>',$file or die "$file: $!\n"; print $f $s; close $f;
+    }
+}
+patch_memory();
