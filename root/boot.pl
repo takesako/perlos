@@ -3,7 +3,7 @@ sub cat(*) {
     print while <$f>;
     return;
 }
-sub is_pico2 { (peek32(0x40000000) & 0x0fffffff) == 0x4927; }
+sub is_pico2 { (PerlOS::load(0x40000000) & 0x0fffffff) == 0x4927; }
 print<<'EOF';
  ____           _  ___  ____
 |  _ \ ___ _ __| |/ _ \/ ___|

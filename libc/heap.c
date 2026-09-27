@@ -206,6 +206,21 @@ void heap_failure_site(void *p)
     cnt.last_caller = (uintptr_t)p;
 }
 
+#define HIST_MAX 256
+
+static void heap_histogram(void)
+{
+    size_t h[HIST_MAX/8]={0},o=0;
+    while(o<CAPACITY){
+        Block*b=(Block*)(HEAP_START+o);size_t n=SIZE(b);
+        if((b->s.flags&USED)&&n<=HIST_MAX)h[n/8-1]++;
+        o+=H+n;
+    }
+    printf("[heap sizes]\n");
+    for(size_t i=0;i<HIST_MAX/8;i++)
+        if(h[i])printf(" %3zu: %zu\n",(i+1)*8,h[i]);
+}
+
 void heap_dump(const char *tag)
 {
     struct heap_stats s;
@@ -235,4 +250,5 @@ void heap_dump_failure(const char *file, unsigned line)
            cnt.last_caller,
            file ? file : "(startup)", line);
     heap_dump("oom");
+    heap_histogram();
 }

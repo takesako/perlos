@@ -14,57 +14,25 @@
 _Static_assert(sizeof(NV)==4, "PerlOS requires binary32 NV");
 _Static_assert(sizeof(IV)==4 && sizeof(void *)==4, "PerlOS requires ILP32");
 
-#define PTR(t,n) ((volatile t *)(uintptr_t)SvUV(ST(n)))
+#define XOR_MASK 0x1000u
+#define SET_MASK 0x2000u
+#define CLR_MASK 0x3000u
 
-#define PEEK(n,t) \
-XS(XS_##n){ \
-    dXSARGS; \
-    if(items!=1) XSRETURN_UNDEF; \
-    ST(0)=sv_2mortal(newSVuv(*PTR(t,0))); \
-    XSRETURN(1); \
-}
-
-#define POKE(n,t) \
-XS(XS_##n){ \
-    dXSARGS; \
-    if(items!=2) XSRETURN_UNDEF; \
-    *PTR(t,0)=(t)SvUV(ST(1)); \
-    XSRETURN_EMPTY; \
-}
-
-PEEK(peek8, uint8_t)
-PEEK(peek16,uint16_t)
-PEEK(peek32,uint32_t)
-
-POKE(poke8, uint8_t)
-POKE(poke16,uint16_t)
-POKE(poke32,uint32_t)
-
-XS(XS_bits32)
+XS(XS_load)
 {
     dXSARGS;
-    volatile uint32_t *p;
-    uint32_t mask;
-
-    if(items<2||items>3) XSRETURN_UNDEF;
-
-    p=PTR(uint32_t,0);
-    mask=(uint32_t)SvUV(ST(1));
-
-    if(items==2) {
-        ST(0)=sv_2mortal(newSVuv(*p&mask));
-        XSRETURN(1);
-    }
-
-    *p=(*p&~mask)|((uint32_t)SvUV(ST(2))&mask);
-    XSRETURN_EMPTY;
+    if(items != 1) XSRETURN_UNDEF;
+    ST(0)=sv_2mortal(newSVuv(*(volatile uint32_t *)(uintptr_t)SvUV(ST(0))));
+    XSRETURN(1);
 }
 
-XS(XS_flip32)
+XS(XS_store)
 {
     dXSARGS;
-    if(items!=2) XSRETURN_UNDEF;
-    *PTR(uint32_t,0)^=(uint32_t)SvUV(ST(1));
+    if(items < 2 || items > 3) XSRETURN_UNDEF;
+    *(volatile uint32_t *)(uintptr_t)
+        (SvUV(ST(0)) + (items == 3 ? SvUV(ST(2)) : 0))
+        = (uint32_t)SvUV(ST(1));
     XSRETURN_EMPTY;
 }
 
@@ -142,16 +110,18 @@ XS(XS_meminfo)
 
 void perlos_init(pTHX)
 {
+    HV *stash;
+
+    newXSproto("PerlOS::load",  XS_load,  __FILE__, "$");
+    newXSproto("PerlOS::store", XS_store, __FILE__, "$$;$");
+
+    stash = gv_stashpv("main", GV_ADD);
+    newCONSTSUB(stash, "XOR_MASK", newSVuv(XOR_MASK));
+    newCONSTSUB(stash, "SET_MASK", newSVuv(SET_MASK));
+    newCONSTSUB(stash, "CLR_MASK", newSVuv(CLR_MASK));
+
     newXSproto("main::pwd",    XS_pwd,    __FILE__,"");
     newXSproto("main::ls",     XS_ls,     __FILE__,";*");
-    newXSproto("main::peek8",  XS_peek8,  __FILE__,"$");
-    newXSproto("main::peek16", XS_peek16, __FILE__,"$");
-    newXSproto("main::peek32", XS_peek32, __FILE__,"$");
-    newXSproto("main::poke8",  XS_poke8,  __FILE__,"$$");
-    newXSproto("main::poke16", XS_poke16, __FILE__,"$$");
-    newXSproto("main::poke32", XS_poke32, __FILE__,"$$");
-    newXSproto("main::bits32", XS_bits32, __FILE__,"$$;$");
-    newXSproto("main::flip32", XS_flip32, __FILE__,"$$");
     newXSproto("main::getchar_timeout",XS_getchar_timeout,__FILE__,"$");
     newXSproto("main::gettick",        XS_gettick,        __FILE__, "");
     newXSproto("main::gettick_diff",   XS_gettick_diff,   __FILE__, "$");
