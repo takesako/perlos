@@ -1,6 +1,8 @@
 QEMU      := qemu-system-arm
 QEMU_ARGS := -M mps2-an505 -display none -monitor none -serial stdio \
              -semihosting-config enable=on,target=native
+QEMU_QMP  := -qmp tcp:127.0.0.1:4444,server=on,wait=off \
+             -icount shift=10,align=off,sleep=on
 CC        := arm-none-eabi-gcc
 CFLAGS    := -mcpu=cortex-m33 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard \
              -nostdinc -Ilibc -Ios -Iperl-5.12.5 -std=gnu11 -Os -Wall \
@@ -88,6 +90,11 @@ qemu.elf: qemu.ld main.c $(QEMU_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMF
 run: qemu.elf
 	$(QEMU) -version
 	$(QEMU) $(QEMU_ARGS) -kernel $<
+
+ramview: qemu.elf
+	perl script/ramview.pl & viewer=$$!; \
+	trap 'kill $$viewer 2>/dev/null || :' EXIT; \
+	$(QEMU) $(QEMU_ARGS) $(QEMU_QMP) -kernel $<
 
 # Raspberry Pi Pico 2
 
