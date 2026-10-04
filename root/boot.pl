@@ -1,9 +1,35 @@
+sub is_pico2 { int(PerlOS::load(0x40000000) & 0x0fffffff == 0x4927); }
 sub cat(*) {
-    open my $f,'<',$_[0] or do { warn "cat: $_[0]: $!\n"; return };
-    print while <$f>;
-    return;
+  open my $f,'<',$_[0] or do { warn "cat: $_[0]: $!\n"; return };
+  print while <$f>; return;
 }
-sub is_pico2 { (PerlOS::load(0x40000000) & 0x0fffffff) == 0x4927; }
+sub help {
+  print <<'EOF';
+PerlOS functions:
+  help()                        show this help
+  pwd()                         show current directory
+  ls()                          list ROMFS files
+  cat 'file'                    show file contents
+  is_pico2()                    detect Raspberry Pi Pico 2
+  getchar_timeout($ms)          read one byte with timeout
+  gettick()                     current time in ms
+  gettick_diff($start)          ms since $start
+  meminfo()                     show C heap statistics
+  PerlOS::load($addr)           read 32-bit memory/MMIO
+  PerlOS::store($addr,$value)   write 32-bit memory/MMIO
+  PerlOS::store($a,$b,SET_MASK) write to $a, set bit $b
+  PerlOS::store($a,$b,CLR_MASK) write to $a, clear bit $b
+  PerlOS::store($a,$b,XOR_MASK) write to $a, toggle bit $b
+
+REPL commands:
+  :{ ... :}                     multiline input
+  :mem [on|off]                 monitor heap after each eval
+  :mem reset                    reset peak heap usage
+  :mem check                    check heap integrity
+  :quit                         exit PerlOS (Ctrl-D also exits)
+EOF
+  return;
+}
 print<<'EOF';
  ____           _  ___  ____
 |  _ \ ___ _ __| |/ _ \/ ___|
@@ -11,9 +37,9 @@ print<<'EOF';
 |  __/  __/ |  | | |_| |___) |
 |_|   \___|_|  |_|\___/|____/
 EOF
-print "PerlOS (microperl $^V, NV=float, ROMFS2)\n";
+print "PerlOS $PerlOS::VERSION (microperl $^V, NV=float, ROMFS2)\n";
 print is_pico2() ? "Raspberry Pi Pico 2" : "Arm MPS2+ AN505";
 print " / Cortex-M33 FPv5-SP-D16\n";
-print "type> ls; cat 'boot.pl'; :help :{ ... :} :quit\n";
+print "type> help; ls; cat 'boot.pl'; :{ ... :} :quit\n";
 print "\n";
 1;

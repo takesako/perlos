@@ -1,3 +1,4 @@
+#include "perlos.h"
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -111,7 +112,12 @@ XS(XS_meminfo)
 void perlos_init(pTHX)
 {
     HV *stash;
+    SV *version;
 
+    stash = gv_stashpv("PerlOS", GV_ADD);
+    version = get_sv("PerlOS::VERSION", GV_ADD);
+    sv_setpv(version, PERLOS_VERSION);
+    SvREADONLY_on(version);
     newXSproto("PerlOS::load",  XS_load,  __FILE__, "$");
     newXSproto("PerlOS::store", XS_store, __FILE__, "$$;$");
 
@@ -119,7 +125,6 @@ void perlos_init(pTHX)
     newCONSTSUB(stash, "XOR_MASK", newSVuv(XOR_MASK));
     newCONSTSUB(stash, "SET_MASK", newSVuv(SET_MASK));
     newCONSTSUB(stash, "CLR_MASK", newSVuv(CLR_MASK));
-
     newXSproto("main::pwd",    XS_pwd,    __FILE__,"");
     newXSproto("main::ls",     XS_ls,     __FILE__,";*");
     newXSproto("main::getchar_timeout",XS_getchar_timeout,__FILE__,"$");
@@ -192,7 +197,7 @@ int perlos_readline(char *s, size_t cap)
             if(too_long) { s[0]=0; return -3; }
             s[n]=0; if(n)fputs("\r\n",stdout); return n?(int)n:-1;
         }
-        /* Consume CSI/SS3 navigation keys; no history or cursor editing. */
+        // Consume CSI/SS3 navigation keys; no history or cursor editing.
         if(escape) {
             if(escape==1 && (c=='['||c=='O')) escape=2;
             else if(escape==1 || (c>=0x40&&c<=0x7e)) escape=0;
@@ -265,7 +270,7 @@ int perlos_repl(void)
             if(n==-3) puts("input too long; discarded");
             free(block); block=0; used=0; multiline=0; continue;
         }
-        if(!strcmp(line,":quit"))break;
+        if(!strcmp(line,":quit")) break;
         if(!multiline && !strncmp(line,":mem",4) && (!line[4] || line[4]==' ')) {
             if(!strcmp(line,":mem on")) monitor_heap=1;
             else if(!strcmp(line,":mem off")) monitor_heap=0;
@@ -276,15 +281,6 @@ int perlos_repl(void)
                 puts("Usage: :mem [on|off|reset|check]"); continue;
             }
             heap_dump("repl"); continue;
-        }
-        if(!strcmp(line,":cancel")) { free(block); block=0; used=0; multiline=0; continue; }
-        if(!multiline && !strcmp(line,":help")) {
-            puts(":mem [on|off|reset|check] monitors the C heap without allocating.");
-            puts("ticks(), elapsed_ms(start), meminfo() are available from Perl.");
-            puts("Evaluate one line in list context. Results are printed automatically.");
-            puts("Globals persist; lexical my variables do not persist between evaluations.");
-            puts("Use :{ and :} for multiline input. Type :quit or Ctrl-D to exit.");
-            continue;
         }
         if(!multiline && !strcmp(line,":{")) { multiline=1; continue; }
         if(multiline && !strcmp(line,":}")) {
