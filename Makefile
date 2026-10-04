@@ -38,6 +38,7 @@ QEMU_SYS  := $(KERNEL) os/io_an505.c
 PICO_SYS  := $(KERNEL) os/io_pico2.c pico2.S
 TESTS     := $(wildcard t/*.t)
 TEST_ELF  := $(TESTS:.t=.elf)
+ZIP       := perlos.zip
 
 all: qemu.elf pico2.uf2
 
@@ -121,6 +122,11 @@ test: $(TEST_ELF)
 		$(QEMU) $(QEMU_ARGS) -kernel $$t || exit $$?; \
 	done
 	@echo "All tests passed."
+
+zip:
+	rm -f $(ZIP)
+	git ls-files --cached --others --exclude-standard | zip -q $(ZIP) -@
+	@echo "Created $(ZIP)"
 
 clean:
 	rm -f *.elf *.uf2 t/*.elf libc/*.o perl-5.12.5/*.o os/*.o
