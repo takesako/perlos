@@ -17,9 +17,9 @@ PerlOS functions:
   meminfo()                     show C heap statistics
   PerlOS::load($addr)           read 32-bit memory/MMIO
   PerlOS::store($addr,$value)   write 32-bit memory/MMIO
-  PerlOS::store($a,$b,SET_MASK) write to $a, set bit $b
-  PerlOS::store($a,$b,CLR_MASK) write to $a, clear bit $b
-  PerlOS::store($a,$b,XOR_MASK) write to $a, toggle bit $b
+  PerlOS::store($addr,$mask,SET_MASK)    set bits in $mask
+  PerlOS::store($addr,$mask,CLR_MASK)  clear bits in $mask
+  PerlOS::store($addr,$mask,XOR_MASK) toggle bits in $mask
 
 REPL commands:
   :{ ... :}                     multiline input
