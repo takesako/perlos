@@ -18,4 +18,4 @@ if (PerlOS::load(0x40000000) & 0x0fffffff == 0x4927) {
 } else {
   print "Error: Raspberry Pi Pico 2 required.\n";
 }
-1;
+return;

@@ -13,4 +13,4 @@ cmpthese(-1, {
     add  => sub { $x += 1 },
     sqrt => sub { $x = sqrt($x + 1) },
 });
-1;
+return;

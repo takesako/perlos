@@ -42,4 +42,4 @@ print is_pico2() ? "Raspberry Pi Pico 2" : "Arm MPS2+ AN505";
 print " / Cortex-M33 FPv5-SP-D16\n";
 print "type> help; ls; cat 'boot.pl'; :{ ... :} :quit\n";
 print "\n";
-1;
+return;

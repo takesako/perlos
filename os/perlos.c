@@ -125,8 +125,8 @@ void perlos_init(pTHX)
     newCONSTSUB(stash, "XOR_MASK", newSVuv(XOR_MASK));
     newCONSTSUB(stash, "SET_MASK", newSVuv(SET_MASK));
     newCONSTSUB(stash, "CLR_MASK", newSVuv(CLR_MASK));
-    newXSproto("main::pwd",    XS_pwd,    __FILE__,"");
-    newXSproto("main::ls",     XS_ls,     __FILE__,";*");
+    newXSproto("main::pwd",            XS_pwd,            __FILE__,"");
+    newXSproto("main::ls",             XS_ls,             __FILE__,";*");
     newXSproto("main::getchar_timeout",XS_getchar_timeout,__FILE__,"$");
     newXSproto("main::gettick",        XS_gettick,        __FILE__, "");
     newXSproto("main::gettick_diff",   XS_gettick_diff,   __FILE__, "$");
@@ -227,6 +227,10 @@ static void evaluate(const char *text, size_t len)
     PUTBACK;
     int n=eval_sv(src,G_ARRAY|G_EVAL);
     SvREFCNT_dec(src);
+    // PUSHMARK(SP);
+    // XPUSHs(sv_2mortal(newSVpvn(text,(STRLEN)len)));
+    // PUTBACK;
+    // int n=call_pv("main::my_eval",G_ARRAY|G_EVAL);
     SPAGAIN;
     if(SvTRUE(ERRSV)) {
         STRLEN l;
@@ -248,7 +252,8 @@ static void evaluate(const char *text, size_t len)
 int perlos_repl(void)
 {
     int argc=4;
-    char arg0[]="picoperl", arg1[]="-Ilib", arg2[]="boot.pl", arg3[]="";
+    char arg0[]="perl", arg1[]="-Ilib", arg2[]="-e", arg3[]="do'boot.pl'";
+    // arg2[]="-E", arg3[]="sub my_eval{my@r=eval$_[0];die$@if$@;@r};do'boot.pl'";
     char *args[]={arg0,arg1,arg2,arg3,0};
     char **argv=args, *empty[]={0}, **env=empty;
     int status=0, multiline=0;

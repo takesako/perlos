@@ -26,4 +26,4 @@ for ($f = 0; $f < 230; ++$f) {
   print $out;
   select(undef, undef, undef, 1/60);
 }
-1;
+return;
