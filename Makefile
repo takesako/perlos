@@ -18,7 +18,7 @@ PERL_READY:= $(PERL_DIR)/uudmap.h
 PERL_DEFS := -DPERL_CORE -DPERL_MICRO -DSTANDARD_C -DNO_MATHOMS \
              -DPICOPERL_NV_FLOAT -DPERL_USE_SAFE_PUTENV \
              -DPERL_EXTERNAL_GLOB -DPERL_ARENA_SIZE=1024 \
-             -DPERLOS_HEAP_DIAGNOSTICS
+             -DPERLOS_HEAP_DIAGNOSTICS -DHEAP_PROFILE
 PERL_OPTS := -fsingle-precision-constant -Wno-unused-variable \
              -Wno-unused-but-set-variable -Wno-implicit-fallthrough \
              -Wno-maybe-uninitialized -Wno-address

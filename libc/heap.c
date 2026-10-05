@@ -28,6 +28,35 @@ static int ready;
 static size_t used, blocks;
 static struct heap_stats cnt;
 
+#ifdef HEAP_PROFILE
+#define HIST_MAX 256
+#define HIST_N   (HIST_MAX / 8)
+static uint32_t hist[HIST_N], peak_hist[HIST_N];
+static size_t hist_large, peak_large;
+
+static void hist_add(size_t n)
+{
+    if (n <= HIST_MAX) hist[n / 8 - 1]++;
+    else hist_large++;
+}
+
+static void hist_del(size_t n)
+{
+    if (n <= HIST_MAX) hist[n / 8 - 1]--;
+    else hist_large--;
+}
+
+static void hist_peak(void)
+{
+    memcpy(peak_hist, hist, sizeof hist);
+    peak_large = hist_large;
+}
+#else
+#define hist_add(n) ((void)0)
+#define hist_del(n) ((void)0)
+#define hist_peak() ((void)0)
+#endif
+
 static void init(void)
 {
     if (ready) return;
@@ -47,7 +76,10 @@ static void peak(void)
 {
     size_t occupied = used + blocks * H;
     if (used > cnt.peak_used) cnt.peak_used = used;
-    if (occupied > cnt.peak_occupied) cnt.peak_occupied = occupied;
+    if (occupied > cnt.peak_occupied) {
+        cnt.peak_occupied = occupied;
+        hist_peak();
+    }
 }
 
 static void join(Block *b)
@@ -86,7 +118,8 @@ static void *allocate(size_t n)
     init();
     for (Block *b = (Block *)HEAP_START; b; b = next(b)) {
         if ((b->s.flags & USED) || SIZE(b) < n) continue;
-        split(b, n); b->s.flags |= USED; used += SIZE(b); peak();
+        split(b, n); b->s.flags |= USED; used += SIZE(b);
+        hist_add(SIZE(b)); peak();
         return b + 1;
     }
     return NULL;
@@ -109,7 +142,7 @@ void free(void *p)
     if (!p) return;
     cnt.free_calls++;
     Block *b = (Block *)p - 1;
-    used -= SIZE(b); b->s.flags &= ~USED;
+    hist_del(SIZE(b)); used -= SIZE(b); b->s.flags &= ~USED;
     join(b);
     if (b->s.prev) {
         Block *q = (Block *)((unsigned char *)b - b->s.prev);
@@ -149,7 +182,8 @@ void *realloc(void *p, size_t n)
             old + H + SIZE(r) >= z)
             join(b);
         if (SIZE(b) >= z) {
-            split(b, z); used = used - old + SIZE(b); peak();
+            hist_del(old); split(b, z); hist_add(SIZE(b));
+            used = used - old + SIZE(b); peak();
             cnt.realloc_inplace++; return p;
         }
     }
@@ -196,9 +230,8 @@ int heap_check(void)
 
 void heap_reset_peak(void)
 {
-    init();
-    cnt.peak_used = used;
-    cnt.peak_occupied = used + blocks * H;
+    init(); cnt.peak_used = used; cnt.peak_occupied = used + blocks * H;
+    hist_peak();
 }
 
 void heap_failure_site(void *p)
@@ -206,20 +239,28 @@ void heap_failure_site(void *p)
     cnt.last_caller = (uintptr_t)p;
 }
 
-#define HIST_MAX 256
+#ifdef HEAP_PROFILE
+static void dump_hist(const char *tag, const uint32_t *h, size_t large)
+{
+    size_t n = 0, bytes = 0;
+    printf("[heap sizes %s]\n", tag);
+    for (size_t i = 0; i < HIST_N; i++) if (h[i]) {
+        size_t z = (i + 1) * 8;
+        printf(" %3zu: %u\n", z, (unsigned)h[i]);
+        n += h[i]; bytes += z * h[i];
+    }
+    printf(" <=%u blocks=%zu bytes=%zu header=%zu >%u blocks=%zu\n",
+           HIST_MAX, n, bytes, n * H, HIST_MAX, large);
+}
 
 static void heap_histogram(void)
 {
-    size_t h[HIST_MAX/8]={0},o=0;
-    while(o<CAPACITY){
-        Block*b=(Block*)(HEAP_START+o);size_t n=SIZE(b);
-        if((b->s.flags&USED)&&n<=HIST_MAX)h[n/8-1]++;
-        o+=H+n;
-    }
-    printf("[heap sizes]\n");
-    for(size_t i=0;i<HIST_MAX/8;i++)
-        if(h[i])printf(" %3zu: %zu\n",(i+1)*8,h[i]);
+    dump_hist("current", hist, hist_large);
+    dump_hist("peak", peak_hist, peak_large);
 }
+#else
+#define heap_histogram() ((void)0)
+#endif
 
 void heap_dump(const char *tag)
 {
@@ -237,6 +278,7 @@ void heap_dump(const char *tag)
            "moved=%zu failures=%zu\n",
            s.malloc_calls, s.calloc_calls, s.realloc_calls,
            s.realloc_inplace, s.realloc_moved, s.failures);
+    heap_histogram();
 }
 
 void heap_dump_failure(const char *file, unsigned line)
@@ -250,5 +292,4 @@ void heap_dump_failure(const char *file, unsigned line)
            cnt.last_caller,
            file ? file : "(startup)", line);
     heap_dump("oom");
-    heap_histogram();
 }
