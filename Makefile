@@ -11,7 +11,7 @@ CFLAGS    := -mcpu=cortex-m33 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard \
              -ffreestanding -fno-builtin -fno-stack-protector \
              -fno-unwind-tables -fno-asynchronous-unwind-tables \
              -ffunction-sections -fdata-sections -nostdlib \
-             -DROMFS -DHEAP_PROFILE
+             -DROMFS -DHEAP_PROFILE -DHEAP_SMALL_POOL
 LDFLAGS   := -Wl,--gc-sections
 PERL      := perl
 PERL_DIR  := perl-5.12.5
