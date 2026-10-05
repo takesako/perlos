@@ -10,7 +10,8 @@ CFLAGS    := -mcpu=cortex-m33 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard \
              -Werror=implicit-function-declaration \
              -ffreestanding -fno-builtin -fno-stack-protector \
              -fno-unwind-tables -fno-asynchronous-unwind-tables \
-             -ffunction-sections -fdata-sections -nostdlib -DROMFS
+             -ffunction-sections -fdata-sections -nostdlib \
+             -DROMFS -DHEAP_PROFILE
 LDFLAGS   := -Wl,--gc-sections
 PERL      := perl
 PERL_DIR  := perl-5.12.5
@@ -18,7 +19,7 @@ PERL_READY:= $(PERL_DIR)/uudmap.h
 PERL_DEFS := -DPERL_CORE -DPERL_MICRO -DSTANDARD_C -DNO_MATHOMS \
              -DPICOPERL_NV_FLOAT -DPERL_USE_SAFE_PUTENV \
              -DPERL_EXTERNAL_GLOB -DPERL_ARENA_SIZE=1024 \
-             -DPERLOS_HEAP_DIAGNOSTICS -DHEAP_PROFILE
+             -DPERLOS_HEAP_DIAGNOSTICS
 PERL_OPTS := -fsingle-precision-constant -Wno-unused-variable \
              -Wno-unused-but-set-variable -Wno-implicit-fallthrough \
              -Wno-maybe-uninitialized -Wno-address
