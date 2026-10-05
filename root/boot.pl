@@ -37,7 +37,7 @@ print<<'EOF';
 |  __/  __/ |  | | |_| |___) |
 |_|   \___|_|  |_|\___/|____/
 EOF
-print "PerlOS $PerlOS::VERSION (microperl $^V, NV=float, ROMFS2)\n";
+print "PerlOS v$PerlOS::VERSION (microperl $^V, NV=float, ROMFS2)\n";
 print is_pico2() ? "Raspberry Pi Pico 2" : "Arm MPS2+ AN505";
 print " / Cortex-M33 FPv5-SP-D16\n";
 print "type> help; ls; cat 'boot.pl'; :{ ... :} :quit\n";

@@ -31,7 +31,7 @@ You should see:
 | |_) / _ \ '__| | | | \___\
 |  __/  __/ |  | | |_| |___) |
 |_|   \___|_|  |_|\___/|____/
-PerlOS 0.1.0 (microperl v5.12.5, NV=float, ROMFS2)
+PerlOS v0.1.1 (microperl v5.12.5, NV=float, ROMFS2)
 Arm MPS2+ AN505 / Cortex-M33 FPv5-SP-D16
 ```
 
