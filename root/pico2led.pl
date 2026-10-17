@@ -1,5 +1,5 @@
 # Raspberry Pi Pico 2 LED blinking
-if (PerlOS::load(0x40000000) & 0x0fffffff == 0x4927) {
+if ((PerlOS::load(0x40000000) & 0x0fffffff) == 0x4927) {
   PerlOS::store(0x40020000, 0x40, CLR_MASK); # Clear IO_BANK0 reset
   1 until PerlOS::load(0x40020008) & 0x40;   # Wait until reset done
 
