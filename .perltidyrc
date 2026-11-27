@@ -1,0 +1,5 @@
+-i=2
+-ci=2
+-io
+--freeze-blank-lines
+-noll

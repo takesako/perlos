@@ -86,7 +86,7 @@ os/romfs_image.o: os/romfs_image.c
 # QEMU / Arm MPS2+ AN505
 
 qemu.elf: qemu.ld main.c $(QEMU_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG)
-	$(CC) $(CFLAGS) -DQEMU -T qemu.ld $(QEMU_SYS) main.c \
+	$(CC) $(CFLAGS) -DQEMU -DCPU_MHZ=20 -T qemu.ld $(QEMU_SYS) main.c \
 		$(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG) \
 		$(LDFLAGS) -o $@
 
@@ -102,7 +102,7 @@ ramview: qemu.elf
 # Raspberry Pi Pico 2
 
 pico2.elf: pico2.ld main.c $(PICO_SYS) $(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG)
-	$(CC) $(CFLAGS) -DPICO2 -T pico2.ld $(PICO_SYS) main.c \
+	$(CC) $(CFLAGS) -DPICO2 -DCPU_MHZ=150 -T pico2.ld $(PICO_SYS) main.c \
 		$(LIBC_OBJS) $(PERL_OBJS) $(OS_OBJS) $(ROMFS_IMG) \
 		$(LDFLAGS) $(LDLIBS) -o $@
 
@@ -112,7 +112,7 @@ pico2.uf2: pico2.elf
 # Tests
 
 t/%.elf: t/%.t os/io.h os/timer.h qemu.ld $(QEMU_SYS) $(LIBC_OBJS) os/romfs.o
-	$(CC) $(CFLAGS) -DQEMU -DTEST -T qemu.ld \
+	$(CC) $(CFLAGS) -DQEMU -DCPU_MHZ=20 -DTEST -T qemu.ld \
 		$(QEMU_SYS) -x c $< -x none \
 		$(LIBC_OBJS) os/romfs.o \
 		$(LDFLAGS) $(LDLIBS) -o $@

@@ -12,5 +12,5 @@ timethis(-1, sub { $x = sqrt($x + 1) });
 cmpthese(-1, {
     add  => sub { $x += 1 },
     sqrt => sub { $x = sqrt($x + 1) },
-});
+  });
 return;
