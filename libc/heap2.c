@@ -12,7 +12,6 @@ extern unsigned char __heap_start[], __heap_end[];
 #define USED           ((size_t)1)
 #define ALIGN(n)       (((n) + 7) & ~(size_t)7)
 
-#ifdef HEAP_SMALL_POOL
 typedef struct { uint16_t size,n,used; unsigned char *base; void *free; } Pool;
 static Pool pool[]={{8,512,0,0,0},{16,768,0,0,0},{24,4640,0,0,0},
                    {32,2640,0,0,0},{48,1200,0,0,0}};
@@ -20,10 +19,6 @@ static Pool pool[]={{8,512,0,0,0},{16,768,0,0,0},{24,4640,0,0,0},
 #define POOL_BYTES ((size_t)(512*8+768*16+4640*24+2640*32+1200*48))
 #define HEAP_START (RAW_HEAP_START + POOL_BYTES)
 static size_t small_used, small_blocks;
-#else
-#define POOL_BYTES 0
-#define HEAP_START RAW_HEAP_START
-#endif
 #define CAPACITY ((size_t)(HEAP_END - HEAP_START) & ~(size_t)7)
 #define TOTAL    ((size_t)(HEAP_END - RAW_HEAP_START) & ~(size_t)7)
 
@@ -59,14 +54,12 @@ static void hist_peak(void){memcpy(peak_hist,hist,sizeof hist);peak_large=hist_l
 static void init(void)
 {
     if (ready) return;
-#ifdef HEAP_SMALL_POOL
     unsigned char *p=RAW_HEAP_START;
     for(size_t i=0;i<NPOOL;i++){
         Pool *q=&pool[i]; q->base=p; q->free=0;
         for(unsigned j=0;j<q->n;j++){void *x=p+(size_t)j*q->size;*(void**)x=q->free;q->free=x;}
         p+=(size_t)q->size*q->n;
     }
-#endif
     Block *b=(Block *)HEAP_START;
     b->s.flags=CAPACITY-H; b->s.prev=0; blocks=1; ready=1;
 }
@@ -79,11 +72,7 @@ static Block *next(Block *b)
 
 static size_t all_used(void)
 {
-#ifdef HEAP_SMALL_POOL
     return used+small_used;
-#else
-    return used;
-#endif
 }
 
 static void peak(void)
@@ -118,7 +107,6 @@ static void *failure(const char *op,const char *why,size_t n,size_t old,
     cnt.last_element=elem;cnt.last_caller=(uintptr_t)caller;errno=ENOMEM;return NULL;
 }
 
-#ifdef HEAP_SMALL_POOL
 static Pool *small_pool(void *p)
 {
     uintptr_t x=(uintptr_t)p;
@@ -137,7 +125,6 @@ static void *small_alloc(size_t n)
     }
     return NULL;
 }
-#endif
 
 static void *allocate(size_t n)
 {
@@ -152,9 +139,7 @@ static void *allocate(size_t n)
 static void *alloc_any(size_t n)
 {
     init();
-#ifdef HEAP_SMALL_POOL
     void *p=small_alloc(n);if(p)return p;
-#endif
     return allocate(n);
 }
 
@@ -170,11 +155,9 @@ void free(void *p)
 {
     if(!p)return;
     cnt.free_calls++;
-#ifdef HEAP_SMALL_POOL
     Pool *q=small_pool(p);
     if(q){hist_del(q->size);small_used-=q->size;small_blocks--;q->used--;
         *(void **)p=q->free;q->free=p;return;}
-#endif
     Block *b=(Block *)p-1;hist_del(SIZE(b));used-=SIZE(b);b->s.flags&=~USED;join(b);
     if(b->s.prev){Block *q=(Block *)((unsigned char *)b-b->s.prev);if(!(q->s.flags&USED))join(q);}
 }
@@ -192,20 +175,14 @@ void *calloc(size_t n,size_t s)
 void *realloc(void *p,size_t n)
 {
     void *q;size_t old=0,z;cnt.realloc_calls++;
-#ifdef HEAP_SMALL_POOL
     Pool *sp=p?small_pool(p):NULL;
     if(p)old=sp?sp->size:SIZE((Block *)p-1);
-#else
-    if(p)old=SIZE((Block *)p-1);
-#endif
     if(!n){free(p);return NULL;}
     if(n>(size_t)-1-7)return failure("realloc","size overflow",n,old,1,n,__builtin_return_address(0));
     z=ALIGN(n);
     if(p){
-#ifdef HEAP_SMALL_POOL
         if(sp){if(z<=old){cnt.realloc_inplace++;return p;}}
         else
-#endif
         {
             Block *b=(Block *)p-1,*r=next(b);
             if(old<z&&r&&!(r->s.flags&USED)&&old+H+SIZE(r)>=z)join(b);
@@ -233,12 +210,10 @@ int heap_get_stats(struct heap_stats *s)
     }
     s->overhead=count*H;
     if(live!=used||count!=blocks||off!=CAPACITY)return -1;
-#ifdef HEAP_SMALL_POOL
     for(size_t i=0;i<NPOOL;i++){
         size_t u=(size_t)pool[i].size*pool[i].used,f=(size_t)pool[i].size*(pool[i].n-pool[i].used);
         s->used+=u;s->free+=f;s->used_blocks+=pool[i].used;
     }
-#endif
     return 0;
 }
 
@@ -260,15 +235,11 @@ static void heap_histogram(void){dump_hist("current",hist,hist_large);dump_hist(
 #define heap_histogram() ((void)0)
 #endif
 
-#ifdef HEAP_SMALL_POOL
 static void pool_dump(void)
 {
     printf("[pool]");for(size_t i=0;i<NPOOL;i++)printf(" %u:%u/%u",pool[i].size,pool[i].used,pool[i].n);
     printf(" reserved=%zu saved=%zu\n",(size_t)POOL_BYTES,small_blocks*H);
 }
-#else
-#define pool_dump() ((void)0)
-#endif
 
 void heap_dump(const char *tag)
 {

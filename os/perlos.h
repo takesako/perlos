@@ -1,7 +1,7 @@
 #ifndef PERLOS_H
 #define PERLOS_H
 
-#define PERLOS_VERSION "0.1.1"
+#define PERLOS_VERSION "0.1.2"
 
 int perlos_repl(void);
 

@@ -11,7 +11,7 @@ CFLAGS    := -mcpu=cortex-m33 -mthumb -mfpu=fpv5-sp-d16 -mfloat-abi=hard \
              -ffreestanding -fno-builtin -fno-stack-protector \
              -fno-unwind-tables -fno-asynchronous-unwind-tables \
              -ffunction-sections -fdata-sections -nostdlib \
-             -DROMFS -DHEAP_PROFILE -DHEAP_SMALL_POOL
+             -DROMFS -DHEAP_PROFILE
 LDFLAGS   := -Wl,--gc-sections
 PERL      := perl
 PERL_DIR  := perl-5.12.5
@@ -27,7 +27,8 @@ PERL_CORE := av deb doio doop dump globals gv hv locale mg mro numeric \
              op pad perl perlapi perlio perly pp pp_ctl pp_hot pp_pack \
              pp_sort pp_sys reentr regcomp regexec run scope sv taint \
              toke universal utf8 util
-LIBC_CORE := aeabi errno math setjmp stdio stdlib string time heap
+HEAP      ?= heap2
+LIBC_CORE := aeabi errno math setjmp stdio stdlib string time $(HEAP)
 LIBC_OBJS := $(addprefix libc/,$(addsuffix .o,$(LIBC_CORE)))
 PERL_OBJS := $(addprefix $(PERL_DIR)/,$(addsuffix .o,$(PERL_CORE)))
 PERL_SRCS := $(PERL_OBJS:.o=.c)
