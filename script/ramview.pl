@@ -7,11 +7,11 @@ use Time::HiRes qw(usleep);
 
 use constant {
     ADDR => 0x80000000,
-    SIZE => 520 * 1024,
     W    => 1024,
     H    => 520,
     FPS  => 30,
 };
+use constant SIZE => W * H;
 
 my $dump = "/tmp/perlos-ram.bin";
 # ------------------------------------------------------------
